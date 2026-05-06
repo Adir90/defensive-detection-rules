@@ -1,0 +1,94 @@
+# DEFENSIVE — owned-lab only
+# Purpose: detect a stager pattern where powershell.exe (or pwsh.exe) initiates
+# an outbound network connection to either a raw IP (no DNS hostname) or a
+# generally low-reputation TLD on a non-browser port. Pattern observed across
+# multiple intrusion sets (Iranian APT clusters and commodity loaders).
+# Anonymized: no specific IPs, ASNs, hostnames, or hashes from any real campaign.
+# Validated against MITRE ATT&CK v15.
+
+title: PowerShell Outbound Connection To Raw IP Or Low-Reputation TLD
+id: 4e8a1d3c-9b2f-4e6d-b1a5-7c3e8f9d2b4a
+status: experimental
+description: |
+    Detects a network_connection event whose initiating image is powershell.exe
+    or pwsh.exe and whose destination is either (a) a hostname literal that is
+    itself an IPv4 address (raw-IP usage with no DNS resolution), or (b) a
+    hostname under a TLD that is statistically low-reputation in enterprise
+    traffic (.top, .xyz, .icu, .click, .tk, .gq, .cf, .ml). This pattern is
+    characteristic of stager retrieval after an obfuscated PowerShell payload
+    runs (see companion rule obfuscated_powershell_defender_disable.yml).
+    IPv6 raw-address detection is left for a follow-up rule.
+references:
+    - https://attack.mitre.org/techniques/T1059/001/
+    - https://attack.mitre.org/techniques/T1071/001/
+    - https://attack.mitre.org/techniques/T1105/
+author: Adir (independent defensive security researcher)
+date: 2026/05/06
+modified: 2026/05/06
+tags:
+    - attack.execution
+    - attack.command_and_control
+    - attack.t1059.001
+    - attack.t1071.001
+    - attack.t1105
+logsource:
+    category: network_connection
+    product: windows
+detection:
+    selection_powershell_proc:
+        Image|endswith:
+            - '\powershell.exe'
+            - '\pwsh.exe'
+        Initiated: 'true'
+    selection_low_rep_tld:
+        DestinationHostname|endswith:
+            - '.top'
+            - '.xyz'
+            - '.icu'
+            - '.click'
+            - '.tk'
+            - '.gq'
+            - '.cf'
+            - '.ml'
+    selection_raw_ipv4_in_hostname:
+        DestinationHostname|re: '^(\d{1,3}\.){3}\d{1,3}$'
+    filter_rfc1918_and_localhost:
+        DestinationIp|startswith:
+            - '10.'
+            - '192.168.'
+            - '172.16.'
+            - '172.17.'
+            - '172.18.'
+            - '172.19.'
+            - '172.20.'
+            - '172.21.'
+            - '172.22.'
+            - '172.23.'
+            - '172.24.'
+            - '172.25.'
+            - '172.26.'
+            - '172.27.'
+            - '172.28.'
+            - '172.29.'
+            - '172.30.'
+            - '172.31.'
+            - '127.'
+            - '169.254.'
+    filter_common_admin_ports:
+        DestinationPort:
+            - 53
+            - 88
+            - 389
+            - 445
+            - 636
+            - 3268
+            - 3269
+            - 5985
+            - 5986
+    condition: selection_powershell_proc and (selection_low_rep_tld or selection_raw_ipv4_in_hostname) and not filter_rfc1918_and_localhost and not filter_common_admin_ports
+falsepositives:
+    - Internal monitoring or update systems that connect by raw IP. Whitelist by
+      DestinationIp + parent process signature.
+    - Legitimate use of a low-reputation TLD by a known business partner. Build
+      an allowlist of known-good FQDNs before deploying to production.
+level: high

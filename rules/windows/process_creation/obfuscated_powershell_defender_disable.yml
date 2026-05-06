@@ -1,0 +1,76 @@
+# DEFENSIVE — owned-lab only
+# Purpose: detect a defense-evasion + execution chain commonly observed in commodity
+# loaders and APT tradecraft, where PowerShell is launched with obfuscation markers
+# and used to disable Microsoft Defender's real-time monitoring before staging a
+# payload from a remote URL.
+# Anonymized: no specific filenames, hashes, IPs, or hostnames from any real campaign.
+# Validated against MITRE ATT&CK v15.
+
+title: Obfuscated PowerShell Disabling Defender With Remote Payload Stage
+id: 9d4b2e7a-6c1f-4d8b-a2e4-3f5c7d9e1a2b
+status: experimental
+description: |
+    Detects a process_creation event for powershell.exe (or pwsh.exe) where the
+    command line contains both an obfuscation marker (e.g. -EncodedCommand,
+    FromBase64String, IEX, Invoke-Expression) and a Defender-tampering verb
+    (Set-MpPreference with DisableRealtimeMonitoring or DisableBehaviorMonitoring),
+    optionally combined with an outbound stager (Invoke-WebRequest, IWR,
+    Net.WebClient, DownloadString, DownloadFile). This shape is characteristic of
+    fileless loaders used by multiple intrusion sets (commodity and APT).
+references:
+    - https://attack.mitre.org/techniques/T1059/001/
+    - https://attack.mitre.org/techniques/T1027/
+    - https://attack.mitre.org/techniques/T1562/001/
+author: Adir (independent defensive security researcher)
+date: 2026/05/06
+modified: 2026/05/06
+tags:
+    - attack.execution
+    - attack.defense_evasion
+    - attack.t1059.001
+    - attack.t1027
+    - attack.t1562.001
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_powershell:
+        Image|endswith:
+            - '\powershell.exe'
+            - '\pwsh.exe'
+    selection_obfuscation:
+        CommandLine|contains:
+            - ' -EncodedCommand '
+            - ' -enc '
+            - ' -ec '
+            - 'FromBase64String'
+            - 'IEX('
+            - 'Invoke-Expression'
+            - '[char]'
+            - '-bxor'
+            - '-join'
+    selection_defender_tamper:
+        CommandLine|contains|all:
+            - 'Set-MpPreference'
+        CommandLine|contains:
+            - 'DisableRealtimeMonitoring'
+            - 'DisableBehaviorMonitoring'
+            - 'DisableIOAVProtection'
+            - 'DisableScriptScanning'
+            - 'MAPSReporting 0'
+            - 'SubmitSamplesConsent 2'
+    selection_remote_stage:
+        CommandLine|contains:
+            - 'Invoke-WebRequest'
+            - 'iwr '
+            - 'Net.WebClient'
+            - 'DownloadString'
+            - 'DownloadFile'
+            - 'Start-BitsTransfer'
+    condition: selection_powershell and selection_defender_tamper and (selection_obfuscation or selection_remote_stage)
+falsepositives:
+    - Endpoint management tooling that legitimately suspends real-time protection
+      during a signed deployment window. Validate by parent process, signing
+      certificate of the calling EXE, and absence of base64-encoded payloads.
+    - Security-product self-test scripts. Onboard a known-good baseline.
+level: high

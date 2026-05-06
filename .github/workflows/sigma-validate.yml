@@ -1,0 +1,61 @@
+name: sigma-validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: pySigma parse + lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install pySigma
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pysigma pyyaml
+
+      - name: Parse every rule (schema check)
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from sigma.collection import SigmaCollection
+          rule_files = sorted(Path("rules").rglob("*.yml"))
+          assert rule_files, "no rule files found under rules/"
+          print(f"Found {len(rule_files)} rule file(s).")
+          SigmaCollection.load_ruleset([str(p) for p in rule_files])
+          print("OK: every rule parsed.")
+          PY
+
+      - name: Verify required metadata fields
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+          required = {"title", "id", "status", "description", "references",
+                      "author", "date", "tags", "logsource", "detection",
+                      "falsepositives", "level"}
+          missing_any = False
+          for p in sorted(Path("rules").rglob("*.yml")):
+              data = yaml.safe_load(p.read_text(encoding="utf-8"))
+              missing = required - set(data.keys())
+              if missing:
+                  print(f"MISSING in {p}: {sorted(missing)}")
+                  missing_any = True
+          if missing_any:
+              raise SystemExit(1)
+          print("OK: every rule has the required metadata block.")
+          PY

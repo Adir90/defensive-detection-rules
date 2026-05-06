@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets — never commit
+.env
+.env.*
+*.dpapi
+api_keys.json
+*.pem
+*.key
+
+# pySigma cache
+.pysigma_cache/
+.pytest_cache/
+
+# Testing artifacts
+.coverage
+htmlcov/
+
+# Local notes (drafts not meant for publication)
+NOTES_LOCAL.md
+TODO_LOCAL.md
