@@ -49,9 +49,17 @@ detection:
             - '[char]'
             - '-bxor'
             - '-join'
-    selection_defender_tamper:
-        CommandLine|contains|all:
+    selection_defender_verb:
+        # Either Set-MpPreference (modify) or Add-MpPreference (additive — exclusion lists).
+        # Split into a separate selector from the parameter list so that the AND semantics
+        # are explicit in the condition. Mixing two CommandLine|contains keys in one
+        # selection is a Sigma anti-pattern flagged by 2026-05-06 v0.1.1 peer review.
+        CommandLine|contains:
             - 'Set-MpPreference'
+            - 'Add-MpPreference'
+    selection_defender_param:
+        # Either a real-time-protection disable verb OR an Exclusion* parameter that
+        # carves a path / process / extension out of Defender coverage.
         CommandLine|contains:
             - 'DisableRealtimeMonitoring'
             - 'DisableBehaviorMonitoring'
@@ -59,6 +67,9 @@ detection:
             - 'DisableScriptScanning'
             - 'MAPSReporting 0'
             - 'SubmitSamplesConsent 2'
+            - 'ExclusionPath'
+            - 'ExclusionExtension'
+            - 'ExclusionProcess'
     selection_remote_stage:
         CommandLine|contains:
             - 'Invoke-WebRequest'
@@ -67,7 +78,7 @@ detection:
             - 'DownloadString'
             - 'DownloadFile'
             - 'Start-BitsTransfer'
-    condition: selection_powershell and selection_defender_tamper and (selection_obfuscation or selection_remote_stage)
+    condition: selection_powershell and selection_defender_verb and selection_defender_param and (selection_obfuscation or selection_remote_stage)
 falsepositives:
     - Endpoint management tooling that legitimately suspends real-time protection
       during a signed deployment window. Validate by parent process, signing

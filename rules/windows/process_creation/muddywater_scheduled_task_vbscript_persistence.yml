@@ -24,6 +24,7 @@ tags:
     - attack.execution
     - attack.t1053.005
     - attack.t1059.005
+    - attack.t1059.007
 logsource:
     category: process_creation
     product: windows
@@ -48,10 +49,13 @@ detection:
             - '\ProgramData\'
             - '\Users\Default\'
     filter_signed_admin_paths:
+        # NOTE: \Windows\System32\ deliberately excluded from this filter — schtasks.exe
+        # and wscript.exe both live there, so filtering on System32 in the CommandLine
+        # would suppress the legitimate true-positive constellation. Keep the user-writable
+        # path assertions in selection_writable_path as the positive gate instead.
         CommandLine|contains:
             - '\Program Files\'
             - '\Program Files (x86)\'
-            - '\Windows\System32\'
     condition: selection_schtasks and selection_script_host and selection_script_file and selection_writable_path and not filter_signed_admin_paths
 falsepositives:
     - Legitimate enterprise software that schedules a maintenance VBScript from a user-writable

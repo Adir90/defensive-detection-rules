@@ -50,8 +50,14 @@ detection:
             - '.gq'
             - '.cf'
             - '.ml'
-    selection_raw_ipv4_in_hostname:
-        DestinationHostname|re: '^(\d{1,3}\.){3}\d{1,3}$'
+    selection_raw_ipv4_dest:
+        # Sysmon Event 3 (network_connection) does NOT populate DestinationHostname
+        # by default — only DestinationIp is reliably present. Matching on
+        # DestinationHostname for raw-IPv4 detection (as v0.1.0 did) caused the
+        # branch to never fire on real Sysmon telemetry. v0.1.1 switches to
+        # DestinationIp regex, which IS always populated. Caught by 2026-05-06
+        # 5-reviewer peer audit (GPT-5 critical finding).
+        DestinationIp|re: '^(\d{1,3}\.){3}\d{1,3}$'
     filter_rfc1918_and_localhost:
         DestinationIp|startswith:
             - '10.'
@@ -85,7 +91,7 @@ detection:
             - 3269
             - 5985
             - 5986
-    condition: selection_powershell_proc and (selection_low_rep_tld or selection_raw_ipv4_in_hostname) and not filter_rfc1918_and_localhost and not filter_common_admin_ports
+    condition: selection_powershell_proc and (selection_low_rep_tld or selection_raw_ipv4_dest) and not filter_rfc1918_and_localhost and not filter_common_admin_ports
 falsepositives:
     - Internal monitoring or update systems that connect by raw IP. Whitelist by
       DestinationIp + parent process signature.
