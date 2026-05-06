@@ -1,5 +1,10 @@
 # defensive-detection-rules
 
+[![sigma-validate](https://github.com/Adir90/defensive-detection-rules/actions/workflows/sigma-validate.yml/badge.svg)](https://github.com/Adir90/defensive-detection-rules/actions/workflows/sigma-validate.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Rules](https://img.shields.io/badge/rules-4-blue.svg)](#rule-index)
+[![ATT&CK](https://img.shields.io/badge/ATT%26CK-v15-red.svg)](https://attack.mitre.org/)
+
 Sigma detection rules authored by a solo defensive security researcher, focused on
 Windows endpoint telemetry. All rules are validated against MITRE ATT&CK v15.
 

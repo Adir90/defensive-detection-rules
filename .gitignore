@@ -8,8 +8,10 @@ dist/
 .venv/
 venv/
 
-# IDE
-.vscode/
+# IDE — keep shared settings.json + extensions.json, ignore user-specific
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
 .idea/
 *.swp
 *.swo

@@ -1,0 +1,21 @@
+{
+  "yaml.schemas": {
+    "https://raw.githubusercontent.com/SigmaHQ/sigma-specification/main/json-schema/sigma-detection-rule-schema.json": "rules/**/*.yml"
+  },
+  "yaml.format.enable": true,
+  "yaml.format.singleQuote": true,
+  "files.associations": {
+    "*.yml": "yaml"
+  },
+  "editor.tabSize": 4,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
+  "[yaml]": {
+    "editor.tabSize": 4,
+    "editor.formatOnSave": false
+  },
+  "[markdown]": {
+    "editor.formatOnSave": false,
+    "editor.wordWrap": "on"
+  }
+}
